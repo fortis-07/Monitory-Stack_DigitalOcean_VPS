@@ -1,0 +1,14 @@
+# ansible/site.yml
+---
+- name: Deploy Monitoring Stack
+  hosts: monitoring
+  become: true
+  vars:
+    alertmanager_slack_webhook: https://alert-monitoring-hq.slack.com/archives/C0898TGAU5R
+  roles:
+    - prometheus
+    - alertmanager
+    - grafana
+    - loki
+    - statsd-exporter
+    - nginx

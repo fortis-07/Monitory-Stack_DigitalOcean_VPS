@@ -1,0 +1,12 @@
+[Unit]
+Description=StatsD Exporter
+After=network.target
+
+[Service]
+User=statsd
+Group=statsd
+ExecStart=/usr/local/bin/statsd_exporter --config.file=/etc/statsd_exporter/statsd_mapping.yml
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

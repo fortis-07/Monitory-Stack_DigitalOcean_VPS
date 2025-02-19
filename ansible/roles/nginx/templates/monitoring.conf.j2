@@ -1,0 +1,91 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{ monitoring_domain }};
+
+    # Redirect all HTTP traffic to HTTPS
+    location / {
+        return 301 https://$server_name$request_uri;
+    }
+
+    # Let's Encrypt challenges
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name {{ monitoring_domain }};
+
+    # SSL configuration (Certbot will populate these)
+    ssl_certificate /etc/letsencrypt/live/{{ monitoring_domain }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ monitoring_domain }}/privkey.pem;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # Grafana
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    # Prometheus with basic auth
+    location /prometheus/ {
+        auth_basic "Prometheus";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        proxy_pass http://localhost:9090/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Alertmanager with basic auth
+    location /alertmanager/ {
+        auth_basic "Alertmanager";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        proxy_pass http://localhost:9093/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Loki with basic auth
+    location /loki/ {
+        auth_basic "Loki";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        proxy_pass http://localhost:3100/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # StatsD metrics endpoint with basic auth
+    location /metrics/statsd/ {
+        auth_basic "StatsD Metrics";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        proxy_pass http://localhost:9102/metrics;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

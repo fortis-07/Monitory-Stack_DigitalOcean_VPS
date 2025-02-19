@@ -1,0 +1,8 @@
+---
+- name: restart statsd-exporter
+  systemd:
+    name: statsd-exporter
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+

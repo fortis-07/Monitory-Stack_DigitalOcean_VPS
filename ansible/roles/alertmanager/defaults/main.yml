@@ -1,0 +1,2 @@
+# ansible/roles/alertmanager/defaults/main.yml
+alertmanager_version: "0.25.0"  # Replace with the desired version

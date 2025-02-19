@@ -1,0 +1,51 @@
+# ansible/roles/loki/tasks/main.yml
+---
+- name: Create Loki user
+  user:
+    name: loki
+    system: yes
+    shell: /sbin/nologin
+
+- name: Download Loki
+  get_url:
+    url: "https://github.com/grafana/loki/releases/download/v{{ loki_version }}/loki-linux-amd64.zip"
+    dest: /tmp/loki.zip
+
+- name: Install unzip
+  apt:
+    name: unzip
+    state: present
+
+- name: Extract Loki
+  unarchive:
+    src: /tmp/loki.zip
+    dest: /usr/local/bin/
+    remote_src: yes
+    mode: '0755'
+
+- name: Create Loki directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: loki
+    group: loki
+    mode: '0755'
+  with_items:
+    - /etc/loki
+    - /var/lib/loki
+
+- name: Configure Loki
+  template:
+    src: loki.yml.j2
+    dest: /etc/loki/loki.yml
+    owner: loki
+    group: loki
+    mode: '0644'
+
+- name: Install Loki systemd service
+  template:
+    src: loki.service.j2
+    dest: /etc/systemd/system/loki.service
+    mode: '0644'
+  notify: restart loki
+

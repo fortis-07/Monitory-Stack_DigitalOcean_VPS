@@ -1,0 +1,46 @@
+# ansible/roles/statsd-exporter/tasks/main.yml
+---
+- name: Create StatsD exporter user
+  user:
+    name: statsd
+    system: yes
+    shell: /sbin/nologin
+
+- name: Download StatsD exporter
+  get_url:
+    url: "https://github.com/prometheus/statsd_exporter/releases/download/v{{ statsd_version }}/statsd_exporter-{{ statsd_version }}.linux-amd64.tar.gz"
+    dest: /tmp/statsd_exporter.tar.gz
+
+- name: Extract StatsD exporter
+  unarchive:
+    src: /tmp/statsd_exporter.tar.gz
+    dest: /opt
+    remote_src: yes
+
+- name: Create StatsD exporter directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: statsd
+    group: statsd
+    mode: '0755'
+  with_items:
+    - /etc/statsd-exporter
+
+- name: Configure StatsD mapping
+  template:
+    src: statsd-mapping.yml.j2
+    dest: /etc/statsd-exporter/statsd-mapping.yml
+    owner: statsd
+    group: statsd
+    mode: '0644'
+  notify: restart statsd-exporter
+
+- name: Install StatsD exporter systemd service
+  template:
+    src: statsd-exporter.service.j2
+    dest: /etc/systemd/system/statsd-exporter.service
+    mode: '0644'
+  notify: restart statsd-exporter
+  
+

@@ -1,0 +1,176 @@
+# ansible/roles/alertmanager/tasks/main.yml
+---
+- name: Create Alertmanager user
+  user:
+    name: alertmanager
+    system: yes
+    shell: /sbin/nologin    
+
+# - name: Copy Alertmanager binary
+#   copy:
+#     src: "~/alertmanager-0.25.0.linux-amd64.tar.gz"
+#     dest: "/tmp/alertmanager.tar.gz"
+    
+- name: Download Alertmanager
+  get_url:
+    url: "https://github.com/prometheus/alertmanager/releases/download/v{{ alertmanager_version }}/alertmanager-{{ alertmanager_version }}.linux-amd64.tar.gz"
+    dest: /tmp/alertmanager.tar.gz
+  retries: 5
+  delay: 10
+  register: download_result
+  until: download_result is succeeded
+
+
+- name: Extract Alertmanager
+  unarchive:
+    src: /tmp/alertmanager.tar.gz
+    dest: /opt
+    remote_src: yes
+
+- name: Create Alertmanager directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: alertmanager
+    group: alertmanager
+    mode: '0755'
+  with_items:
+    - /etc/alertmanager
+    - /var/lib/alertmanager
+
+- name: Configure Alertmanager
+  template:
+    src: alertmanager.yml.j2
+    dest: /etc/alertmanager/alertmanager.yml
+    owner: alertmanager
+    group: alertmanager
+    mode: '0644'
+  notify: restart alertmanager
+
+- name: Install Alertmanager systemd service
+  template:
+    src: alertmanager.service.j2
+    dest: /etc/systemd/system/alertmanager.service
+    mode: '0644'
+  notify: restart alertmanager
+
+
+
+- name: Extract Alertmanager
+  unarchive:
+    src: /tmp/alertmanager.tar.gz
+    dest: /opt
+    remote_src: yes
+
+- name: Create Alertmanager directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: alertmanager
+    group: alertmanager
+    mode: '0755'
+  with_items:
+    - /etc/alertmanager
+    - /var/lib/alertmanager
+
+- name: Configure Alertmanager
+  template:
+    src: alertmanager.yml.j2
+    dest: /etc/alertmanager/alertmanager.yml
+    owner: alertmanager
+    group: alertmanager
+    mode: '0644'
+  notify: restart alertmanager
+  vars:
+    slack_webhook: "{{ alertmanager_slack_webhook }}"
+
+- name: Install Alertmanager systemd service
+  template: 
+    src: alertmanager.service.j2
+    dest: /etc/systemd/system/alertmanager.service
+    mode: '0644'
+  notify: restart alertmanager
+
+#   # ansible/roles/alertmanager/tasks/main.yml
+# ---
+# - name: Create Alertmanager user
+#   user:
+#     name: alertmanager
+#     system: yes
+#     shell: /sbin/nologin
+
+# - name: Create download directory
+#   file:
+#     path: /tmp/alertmanager_download
+#     state: directory
+#     mode: '0755'
+
+# - name: Download Alertmanager
+#   get_url:
+#     url: "https://github.com/prometheus/alertmanager/releases/download/v{{ alertmanager_version }}/alertmanager-{{ alertmanager_version }}.linux-amd64.tar.gz"
+#     dest: "/tmp/alertmanager_download/alertmanager.tar.gz"
+#     mode: '0644'
+#     force: yes
+#     timeout: 60
+#   register: download_attempt
+#   until: download_attempt is success
+#   retries: 5
+#   delay: 10
+#   environment:
+#     http_proxy: "{{ http_proxy | default('') }}"
+#     https_proxy: "{{ https_proxy | default('') }}"
+
+# - name: Create Alertmanager directories
+#   file:
+#     path: "{{ item }}"
+#     state: directory
+#     owner: alertmanager
+#     group: alertmanager
+#     mode: '0755'
+#   with_items:
+#     - /etc/alertmanager
+#     - /var/lib/alertmanager
+
+# - name: Extract Alertmanager
+#   unarchive:
+#     src: "/tmp/alertmanager_download/alertmanager.tar.gz"
+#     dest: "/tmp/alertmanager_download"
+#     remote_src: yes
+#   register: extract_alertmanager
+
+# - name: Copy Alertmanager binary
+#   copy:
+#     src: "/tmp/alertmanager_download/alertmanager-{{ alertmanager_version }}.linux-amd64/alertmanager"
+#     dest: "/usr/local/bin/alertmanager"
+#     remote_src: yes
+#     mode: '0755'
+#     owner: alertmanager
+#     group: alertmanager
+
+# - name: Configure Alertmanager
+#   template:
+#     src: alertmanager.yml.j2
+#     dest: /etc/alertmanager/alertmanager.yml
+#     owner: alertmanager
+#     group: alertmanager
+#     mode: '0644'
+#   notify: restart alertmanager
+
+# - name: Install Alertmanager systemd service
+#   template:
+#     src: alertmanager.service.j2
+#     dest: /etc/systemd/system/alertmanager.service
+#     mode: '0644'
+#   notify: restart alertmanager
+
+# - name: Start Alertmanager service
+#   systemd:
+#     name: alertmanager
+#     state: started
+#     enabled: yes
+#     daemon_reload: yes
+
+# - name: Clean up download directory
+#   file:
+#     path: /tmp/alertmanager_download
+#     state: absent

@@ -1,0 +1,29 @@
+# Grafana credentials
+grafana_admin_user: admin
+grafana_admin_password: 123456789  
+grafana_secret_key: 0346 
+
+#prometheus credentials
+prometheus_user: admin
+prometheus_group: prometheus
+prometheus_port: 9090
+
+
+loki_version: "2.4.1"  # specify the desired version of Loki
+statsd_version: "0.22.2"
+prometheus_version: "2.45.0"
+
+#nginx credentials
+
+nginx_user: nginx
+nginx_worker_processes: auto
+nginx_pid_path: /run/nginx.pid
+nginx_worker_connections: 1024
+nginx_mime_types_path: /etc/nginx/mime.types
+nginx_access_log_path: /var/log/nginx/access.log
+nginx_error_log_path: /var/log/nginx/error.log
+nginx_sendfile: on
+nginx_tcp_nopush: on
+nginx_tcp_nodelay: on
+nginx_keepalive_timeout: 65
+nginx_types_hash_max_size: 2048

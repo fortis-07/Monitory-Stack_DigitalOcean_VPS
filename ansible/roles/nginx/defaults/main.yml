@@ -1,0 +1,7 @@
+# ansible/roles/nginx/defaults/main.yml
+---
+nginx_worker_processes: auto
+nginx_worker_connections: 1024
+monitoring_domain: ponmile.com.ng
+ssl_admin_email: fortismanuel@gmail.com
+use_self_signed_cert: false

@@ -1,0 +1,154 @@
+# # ansible/roles/nginx/tasks/main.yml
+# ---
+# - name: Install Nginx and Certbot
+#   apt:
+#     name: 
+#       - nginx
+#       - certbot
+#       - python3-certbot-nginx
+#     state: present
+#     update_cache: yes
+
+# - name: Remove default Nginx configuration
+#   file:
+#     path: /etc/nginx/sites-enabled/default
+#     state: absent
+#   notify: restart nginx
+
+# - name: Create Nginx configuration
+#   template:
+#     src: nginx.conf.j2
+#     dest: /etc/nginx/nginx.conf
+#     mode: '0644'
+#   notify: restart nginx
+
+# - name: Create initial monitoring vhost configuration
+#   template:
+#     src: monitoring.conf.j2
+#     dest: /etc/nginx/sites-available/monitoring.conf
+#     mode: '0644'
+#   notify: restart nginx
+
+# - name: Enable monitoring vhost
+#   file:
+#     src: /etc/nginx/sites-available/monitoring.conf
+#     dest: /etc/nginx/sites-enabled/monitoring.conf
+#     state: link
+#   notify: restart nginx
+
+# - name: Ensure nginx is started
+#   service:
+#     name: nginx
+#     state: started
+#     enabled: yes
+
+# - name: Obtain SSL certificate
+#   command: >
+#     certbot --nginx 
+#     -d {{ monitoring_domain }}
+#     --non-interactive
+#     --agree-tos
+#     --email {{ ssl_admin_email }}
+#     --redirect
+#   args:
+#     creates: /etc/letsencrypt/live/{{ monitoring_domain }}
+#   when: not use_self_signed_cert|default(false)
+
+# - name: Set up automatic renewal
+#   cron:
+#     name: "Certbot Renewal"
+#     job: "certbot renew --quiet --no-self-upgrade"
+#     minute: "0"
+#     hour: "3"
+#     weekday: "1"
+
+
+---
+- name: Install Nginx and Certbot
+  apt:
+    name: 
+      - nginx
+      - certbot
+      - python3-certbot-nginx
+    state: present
+    update_cache: yes
+
+- name: Remove default Nginx configuration
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: restart nginx
+
+- name: Ensure /var/www/html exists
+  file:
+    path: /var/www/html
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+
+- name: Create Nginx configuration
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    mode: '0644'
+  notify: restart nginx
+
+- name: Deploy initial monitoring vhost configuration
+  template:
+    src: monitoring-initial.conf.j2
+    dest: /etc/nginx/sites-available/monitoring.conf
+    mode: '0644'
+  notify: restart nginx
+
+- name: Enable monitoring vhost
+  file:
+    src: /etc/nginx/sites-available/monitoring.conf
+    dest: /etc/nginx/sites-enabled/monitoring.conf
+    state: link
+  notify: restart nginx
+
+- name: Ensure nginx is started
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Validate Nginx configuration
+  command: nginx -t
+  register: nginx_validation
+  changed_when: false
+  notify: restart nginx
+
+- name: Obtain SSL certificate
+  command: >
+    certbot --nginx 
+    -d {{ monitoring_domain }}
+    --non-interactive
+    --agree-tos
+    --email {{ ssl_admin_email }}
+    --redirect
+  args:
+    creates: /etc/letsencrypt/live/{{ monitoring_domain }}
+  when: not use_self_signed_cert|default(false)
+  register: certbot_result
+
+- name: Print success message if SSL is created
+  debug:
+    msg: "SSL certificate for {{ monitoring_domain }} has been successfully created!"
+  when: certbot_result is succeeded and not use_self_signed_cert|default(false)
+
+- name: Deploy final monitoring vhost configuration
+  template:
+    src: monitoring.conf.j2
+    dest: /etc/nginx/sites-available/monitoring.conf
+    mode: '0644'
+  notify: restart nginx
+
+- name: Set up automatic renewal
+  cron:
+    name: "Certbot Renewal"
+    job: "certbot renew --quiet --no-self-upgrade"
+    minute: "0"
+    hour: "3"
+    weekday: "1"

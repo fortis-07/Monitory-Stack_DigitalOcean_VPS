@@ -1,0 +1,21 @@
+# ansible/roles/statsd-exporter/templates/statsd-mapping.yml.j2
+mappings:
+  - match: "test.dispatcher.*.*.*"
+    name: "dispatcher_events_total"
+    labels:
+      processor: "$1"
+      action: "$2"
+      outcome: "$3"
+      job: "test_dispatcher"
+
+  - match: "*.error.*"
+    name: "errors_total"
+    labels:
+      type: "$1"
+      error: "$2"
+
+  - match: "*.*.duration"
+    name: "duration_seconds"
+    labels:
+      service: "$1"
+      endpoint: "$2"

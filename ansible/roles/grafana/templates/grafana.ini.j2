@@ -1,0 +1,22 @@
+# ansible/roles/grafana/templates/grafana.ini.j2
+[server]
+http_port = 3000
+
+[security]
+admin_user = {{ grafana_admin_user }}
+admin_password = {{ grafana_admin_password }}
+secret_key = {{ grafana_secret_key }}
+
+[auth.anonymous]
+enabled = false
+
+[dashboards]
+default_home_dashboard_path = /var/lib/grafana/dashboards/default.json
+
+[datasources]
+datasources_path = /etc/grafana/provisioning/datasources
+
+[paths]
+data = /var/lib/grafana
+logs = /var/log/grafana
+plugins = /var/lib/grafana/plugins
